@@ -1,0 +1,10 @@
+services:
+  - image: python:3.9-slim
+    command: ["python", "app.py"]  # Replace with your actual deployment command
+    volumes:
+      - ./backend-new/.venv/lib/python3.9/site-packages/:/app/.venv/lib/python3.9/site-packages/
+    environment:
+      - CUSTOM_DEGRADATIONS_PATH=/app/.venv/lib/python3.9/site-packages/basicsr/data/degradations.py
+    # Custom step to copy your custom degradations.py file
+    before_command:
+      - cp /app/degradations.py /app/.venv/lib/python3.9/site-packages/basicsr/data/degradations.py
