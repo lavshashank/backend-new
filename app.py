@@ -169,6 +169,18 @@ def generate_frames():
     except Exception as e:
         print(f"Video feed error: {e}")
 
+
+def cleanup_uploads_folder():
+    """Delete all files in the uploads folder."""
+    try:
+        for file in os.listdir(app.config['UPLOAD_FOLDER']):
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], file)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+        print("Uploads folder cleaned up successfully.")
+    except Exception as e:
+        print(f"Error cleaning uploads folder: {e}")
+
 @app.route('/')
 def homepage():
     return "Welcome to the homepage!"
@@ -192,6 +204,7 @@ def upload_video():
 
     return jsonify({'error': 'Invalid file type.'}), 400
 
+
 @app.route('/video_feed/<path:file_path>')
 def video_feed(file_path):
     """Stream video with detection and resolution enhancement."""
@@ -212,7 +225,6 @@ def video_feed(file_path):
                     try:
                         results = model.predict(source=frame, save=False, conf=0.8)
                         frame = results[0].plot()
-
                     except Exception as e:
                         print(f"YOLO prediction error: {e}")
 
@@ -228,8 +240,10 @@ def video_feed(file_path):
         except Exception as e:
             print(f"Video feed error: {e}")
 
-    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
+    # After streaming, clean up the uploads folder
+    response = Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    response.call_on_close(cleanup_uploads_folder)
+    return response
 @app.route('/events/<path:file_path>')
 def stream_events(file_path):
     """Provide real-time updates."""
